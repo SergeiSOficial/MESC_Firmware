@@ -93,7 +93,7 @@ static void ThrottleTemperature(MESC_motor_typedef *_motor);
 static void FWRampDown(MESC_motor_typedef *_motor);
 
 void MESCfoc_Init(MESC_motor_typedef *_motor) {
-#ifdef STM32L4 // For some reason, ST have decided to have a different name for the L4 timer DBG freeze...
+#if defined(STM32L4) || defined(STM32G4) // For some reason, ST have decided to have a different name for the L4 timer DBG freeze...
 	DBGMCU->APB2FZ |= DBGMCU_APB2FZ_DBG_TIM1_STOP;
 #else
 	DBGMCU->APB2FZ |= DBGMCU_APB2_FZ_DBG_TIM1_STOP;
