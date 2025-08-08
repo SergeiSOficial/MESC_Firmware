@@ -61,6 +61,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../MESC_Common/Src/MESCsin_lut.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../MESC_Common/Src/MESCtemp.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Src/MESChw_setup.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Src/stspin32g4.c
 )
 
 # Add include paths

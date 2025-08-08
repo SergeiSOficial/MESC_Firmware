@@ -33,6 +33,9 @@
 #include "MESCfoc.h"
 #include "MESCmotor.h"
 #include "MESCtemp.h"
+#include "MESCerror.h"
+#include "MESCpwm.h"
+#include "stspin32g4.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,7 +56,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+STSPIN32G4_HandleTypeDef HdlSTSPING4;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -108,14 +111,54 @@ int main(void)
   MX_USART1_UART_Init();
   MX_TIM2_Init();
   MX_TIM7_Init();
+  MX_TIM3_Init();
 
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
+  STSPIN32G4_init(&HdlSTSPING4);
+  STSPIN32G4_reset(&HdlSTSPING4);
+  STSPIN32G4_setVCC(&HdlSTSPING4, (STSPIN32G4_confVCC){.voltage = _12V,
+                                                        .useNFAULT = true,
+                                                        .useREADY = false });
+  STSPIN32G4_setVDSP(&HdlSTSPING4, (STSPIN32G4_confVDSP){.deglitchTime = _4us,
+                                                          .useNFAULT = true });
+  STSPIN32G4_clearFaults(&HdlSTSPING4);
+  /* 2ms delay for nFault signal end of process */
+  HAL_Delay(2);
+  /* Clear pending BreakIn flag due to STSPIN32G4 initialization */
+  //todo implement BRKIN handling
+  // if (0U == LL_TIM_IsActiveFlag_BRK(TIM1))
+  // {
+  //   /* Nothing to do */
+  // }
+  // else
+  // {
+  //   LL_TIM_ClearFlag_BRK(TIM1);
+  // }
+
+
+
+
   //Set motor timer
 	mtr[0].mtimer = &htim1;
 	mtr[0].stimer = &htim2;
+  mtr[0].HFI.Type = DEFAULT_HFI_TYPE; //Disable HFI
 
+  mtr[0].HFI.inject = 0;
+  mtr[0].meas.hfi_voltage = HFI_VOLTAGE;
+
+  // Configure startup sensor
+  mtr[0].SLStartupSensor = DEFAULT_STARTUP_SENSOR;
+  mtr[0].MotorSensorMode = DEFAULT_SENSOR_MODE;
+
+  // Set hardware limits
+  mtr[0].input_vars.max_request_Idq.q = MAX_IQ_REQUEST;
+  mtr[0].input_vars.min_request_Idq.q = MIN_IQ_REQUEST;
+  mtr[0].input_vars.max_request_Idq.d = MAX_ID_REQUEST;
+
+  // Enable motor control
+  mtr[0].MotorState = MOTOR_STATE_TRACKING;
 
   //Initialise MESC
 	motor_init(&mtr[0]);
@@ -157,7 +200,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV4;
   RCC_OscInitStruct.PLL.PLLN = 85;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV8;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -213,6 +256,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
+  MESCpwm_generateBreakAll();
   while (1)
   {
   }
@@ -229,6 +273,7 @@ void Error_Handler(void)
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
+  MESCpwm_generateBreakAll();
   /* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */

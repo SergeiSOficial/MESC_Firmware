@@ -212,14 +212,7 @@ void DMA1_Channel1_IRQHandler(void)
 void ADC1_2_IRQHandler(void)
 {
   /* USER CODE BEGIN ADC1_2_IRQn 0 */
-  //Todo: Handle ADC interrupts for ADC2
-  if(__HAL_ADC_GET_FLAG(&hadc1,ADC_FLAG_AWD1)){
-		handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_IA);
-		handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_IB);
-		handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_IC);
-		handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_VBUS);
-	}
-	MESC_ADC_IRQ_handler(&mtr[0]);
+
   /* USER CODE END ADC1_2_IRQn 0 */
   HAL_ADC_IRQHandler(&hadc1);
   HAL_ADC_IRQHandler(&hadc2);

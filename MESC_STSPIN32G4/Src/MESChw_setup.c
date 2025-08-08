@@ -28,9 +28,9 @@
 #include "MESCpwm.h"
 
 extern ADC_HandleTypeDef hadc1;
+extern ADC_HandleTypeDef hadc2;
 
 extern TIM_HandleTypeDef htim1;
-
 
 hw_setup_s g_hw_setup;
 motor_s motor;
@@ -38,52 +38,60 @@ motor_s motor;
 uint32_t ADC_buffer[6];
 
 void hw_init(MESC_motor_typedef *_motor) {
-  g_hw_setup.Imax = ABS_MAX_PHASE_CURRENT;  	// Imax is the current at which we are either no longer able to
-             	 	 	 	 	 	 	 	 	// read it, or hardware "don't ever exceed to avoid breakage"
-  g_hw_setup.Vmax = ABS_MAX_BUS_VOLTAGE;  // Headroom beyond which likely to get avalanche of
-                           	   	   	   	  // MOSFETs or DCDC converter
-  g_hw_setup.Vmin = ABS_MIN_BUS_VOLTAGE;  // This implies that the PSU has crapped out or a wire
-                         // has fallen out, and suddenly there will be no power.
+  g_hw_setup.Imax =
+      ABS_MAX_PHASE_CURRENT; // Imax is the current at which we are either no
+                             // longer able to read it, or hardware "don't ever
+                             // exceed to avoid breakage"
+  g_hw_setup.Vmax =
+      ABS_MAX_BUS_VOLTAGE; // Headroom beyond which likely to get avalanche of
+                           // MOSFETs or DCDC converter
+  g_hw_setup.Vmin =
+      ABS_MIN_BUS_VOLTAGE; // This implies that the PSU has crapped out or a
+                           // wire has fallen out, and suddenly there will be no
+                           // power.
   g_hw_setup.Rshunt = R_SHUNT;
-  g_hw_setup.RVBB = R_VBUS_BOTTOM;   //
-  g_hw_setup.RVBT = R_VBUS_TOP;  //
-  g_hw_setup.OpGain = OPGAIN;   //
+  g_hw_setup.RVBB = R_VBUS_BOTTOM; //
+  g_hw_setup.RVBT = R_VBUS_TOP;    //
+  g_hw_setup.OpGain = OPGAIN;      //
   g_hw_setup.VBGain =
       (3.3f / 4096.0f) * (g_hw_setup.RVBB + g_hw_setup.RVBT) / g_hw_setup.RVBB;
-  g_hw_setup.Igain = 3.3 / (g_hw_setup.Rshunt * 4096 * g_hw_setup.OpGain * SHUNT_POLARITY);  // TODO
+  g_hw_setup.Igain = 3.3 / (g_hw_setup.Rshunt * 4096 * g_hw_setup.OpGain *
+                            SHUNT_POLARITY); // TODO
   g_hw_setup.RawCurrLim =
       g_hw_setup.Imax * g_hw_setup.Rshunt * g_hw_setup.OpGain * (4096 / 3.3) +
       2048;
   if (g_hw_setup.RawCurrLim > 4000) {
     g_hw_setup.RawCurrLim = 4000;
-  }  // 4000 is 96 counts away from ADC saturation, allow headroom for opamp not
-     // pulling rail:rail.
+  } // 4000 is 96 counts away from ADC saturation, allow headroom for opamp not
+    // pulling rail:rail.
   g_hw_setup.RawVoltLim =
       (uint16_t)(4096.0f * (g_hw_setup.Vmax / 3.3f) * g_hw_setup.RVBB /
                  (g_hw_setup.RVBB + g_hw_setup.RVBT));
 }
 
 void getRawADC(MESC_motor_typedef *_motor) {
-//Get the injected critical conversions
-  _motor->Raw.Iu = hadc1.Instance->JDR1;// PhaseU Current
-  _motor->Raw.Iv = hadc1.Instance->JDR2;
-  _motor->Raw.Iw = hadc1.Instance->JDR3;
-  _motor->Raw.Vbus = hadc1.Instance->JDR4; //Bus/battery voltage
+  // Get the injected critical conversions
+  _motor->Raw.Iu = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
+  _motor->Raw.Iv = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
+  _motor->Raw.Iw = HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_1);
+  _motor->Raw.Vbus = HAL_ADCEx_InjectedGetValue(
+      &hadc2, ADC_INJECTED_RANK_2); // Bus/battery voltage
 
-//These are handled by regular conversion manager and DMA
+  // These are handled by regular conversion manager and DMA
   GET_THROTTLE_INPUT;
 
-//MOS temperature for MP2
-  _motor->Raw.MOSu_T = ADC_buffer[5]; //Temperature on PB1
-//Motor temp or Brake, needs plumbing in to main MESC...
-  _motor->Raw.ADC_in_ext2 = ADC_buffer[4];
+  // MOS temperature for MP2
+  _motor->Raw.MOSu_T = ADC_buffer[2]; // Temperature on PB1
+  // Motor temp or Brake, needs plumbing in to main MESC...
+  // todo fix this channel
+  _motor->Raw.ADC_in_ext2 = ADC_buffer[2];
 }
 
-void getRawADCVph(MESC_motor_typedef *_motor){
-	//Voltage sense for the MP2
-	  _motor->Raw.Vu = ADC_buffer[0]; //PhaseU Voltage
-	  _motor->Raw.Vv = ADC_buffer[1];
-	  _motor->Raw.Vw = ADC_buffer[2];
+void getRawADCVph(MESC_motor_typedef *_motor) {
+  // Voltage sense for the MP2
+  _motor->Raw.Vu = ADC_buffer[3]; // PhaseU Voltage
+  _motor->Raw.Vv = ADC_buffer[4];
+  _motor->Raw.Vw = ADC_buffer[5];
 }
 #if 0
 static uint32_t const flash_sector_map[] = {
@@ -178,44 +186,71 @@ ProfileStatus eraseFlash( uint32_t const address, uint32_t const length )
     }
 }
 #endif
-void mesc_init_1( MESC_motor_typedef *_motor )
-{
-    // Do nothing
+void mesc_init_1(MESC_motor_typedef *_motor) {
+  // Do nothing
 }
 
-void mesc_init_2( MESC_motor_typedef *_motor )
-{
-    // Do nothing
+void mesc_init_2(MESC_motor_typedef *_motor) {
+  // Do nothing
 }
 
-void mesc_init_3( MESC_motor_typedef *_motor )
-{
+void mesc_init_3(MESC_motor_typedef *_motor) {
 
-	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)&ADC_buffer, 6);
-	HAL_ADCEx_InjectedStart(&hadc1);
+  HAL_ADC_Start_DMA(&hadc2, (uint32_t *)&ADC_buffer, 6);
+  HAL_ADCEx_InjectedStart(&hadc1);
+  HAL_ADCEx_InjectedStart(&hadc2);
 
-	HAL_TIM_PWM_Start(_motor->mtimer, TIM_CHANNEL_4);
+  HAL_TIM_PWM_Start(_motor->mtimer, TIM_CHANNEL_4);
 
-	HAL_TIM_PWM_Start(_motor->mtimer, TIM_CHANNEL_1);
-	HAL_TIMEx_PWMN_Start(_motor->mtimer, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(_motor->mtimer, TIM_CHANNEL_1);
+  HAL_TIMEx_PWMN_Start(_motor->mtimer, TIM_CHANNEL_1);
 
-	HAL_TIM_PWM_Start(_motor->mtimer, TIM_CHANNEL_2);
-	HAL_TIMEx_PWMN_Start(_motor->mtimer, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(_motor->mtimer, TIM_CHANNEL_2);
+  HAL_TIMEx_PWMN_Start(_motor->mtimer, TIM_CHANNEL_2);
 
-	HAL_TIM_PWM_Start(_motor->mtimer, TIM_CHANNEL_3);
-	HAL_TIMEx_PWMN_Start(_motor->mtimer, TIM_CHANNEL_3);
-	MESCpwm_generateBreak(_motor);//We have started the timers, but we really do not want them PWMing yet
-	HAL_Delay(10); //Delay enabling interrupt to avoid spurious error on startup due to ADC not being ready
+  HAL_TIM_PWM_Start(_motor->mtimer, TIM_CHANNEL_3);
+  HAL_TIMEx_PWMN_Start(_motor->mtimer, TIM_CHANNEL_3);
+  MESCpwm_generateBreak(_motor); // We have started the timers, but we really do
+                                 // not want them PWMing yet
+  HAL_Delay(10); // Delay enabling interrupt to avoid spurious error on startup
+                 // due to ADC not being ready
 
-    //todo: Set up the ADC injected channels for current sensing
-	// __HAL_ADC_ENABLE_IT(&hadc1, ADC_IT_AWD); //ToDo, how do I put this into the whole shabang with multiple motors?...
-	__HAL_ADC_ENABLE_IT(&hadc1, ADC_IT_JEOC); //ToDo, how do I put this into the whole shabang with multiple motors?...
-	__HAL_TIM_ENABLE_IT(_motor->mtimer, TIM_IT_UPDATE);
+  // todo: Set up the ADC injected channels for current sensing
+  //  __HAL_ADC_ENABLE_IT(&hadc1, ADC_IT_AWD); //ToDo, how do I put this into
+  //  the whole shabang with multiple motors?...
+  __HAL_ADC_ENABLE_IT(&hadc1,
+                      ADC_IT_JEOC); // ToDo, how do I put this into the whole
+                                    // shabang with multiple motors?...
+  __HAL_ADC_ENABLE_IT(&hadc2,
+                      ADC_IT_JEOC); // ToDo, how do I put this into the whole
+                                    // shabang with multiple motors?...
+  __HAL_TIM_ENABLE_IT(_motor->mtimer, TIM_IT_UPDATE);
 
-	//Set up the input capture for throttle
-	HAL_TIM_IC_Start(_motor->stimer, TIM_CHANNEL_1);
-	HAL_TIM_IC_Start(_motor->stimer, TIM_CHANNEL_2);
-	__HAL_TIM_ENABLE_IT(_motor->stimer, TIM_IT_UPDATE);
-	// Here we can auto set the prescaler to get the us input regardless of the main clock
-	__HAL_TIM_SET_PRESCALER(_motor->stimer, (HAL_RCC_GetHCLKFreq() / 1000000 - 1));
+  // Set up the input capture for throttle
+  HAL_TIM_IC_Start(_motor->stimer, TIM_CHANNEL_1);
+  HAL_TIM_IC_Start(_motor->stimer, TIM_CHANNEL_2);
+  __HAL_TIM_ENABLE_IT(_motor->stimer, TIM_IT_UPDATE);
+  // Here we can auto set the prescaler to get the us input regardless of the
+  // main clock
+  __HAL_TIM_SET_PRESCALER(_motor->stimer,
+                          (HAL_RCC_GetHCLKFreq() / 1000000 - 1));
+}
+
+void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc) {
+  if (hadc == &hadc1) {
+    if (__HAL_ADC_GET_FLAG(&hadc1, ADC_FLAG_AWD1)) {
+      handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_IA);
+      handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_IB);
+      handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_IC);
+      handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_VBUS);
+    }
+  } else if (hadc == &hadc2) {
+    if (__HAL_ADC_GET_FLAG(&hadc2, ADC_FLAG_AWD1)) {
+      handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_IA);
+      handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_IB);
+      handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_IC);
+      handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_VBUS);
+    }
+    MESC_ADC_IRQ_handler(&mtr[0]);
+  }
 }
