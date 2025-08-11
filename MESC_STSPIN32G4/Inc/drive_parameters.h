@@ -122,7 +122,6 @@
 #define IQMAX_A                             7.81
 
 /* Default settings */
-#define DEFAULT_CONTROL_MODE                MCM_SPEED_MODE
 #define DEFAULT_TARGET_SPEED_RPM            500
 #define DEFAULT_TARGET_SPEED_UNIT           (DEFAULT_TARGET_SPEED_RPM*SPEED_UNIT/U_RPM)
 #define DEFAULT_TORQUE_COMPONENT_A          0

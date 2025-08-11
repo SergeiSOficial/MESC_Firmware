@@ -32,7 +32,7 @@
 #define DEADTIME_COMP_V 10
 
 //Inputs
-#define GET_THROTTLE_INPUT _motor->Raw.ADC_in_ext1 = ADC_buffer[3]  // Throttle
+#define GET_THROTTLE_INPUT _motor->Raw.ADC_in_ext1 = ADC_buffer[2]  // Throttle
 
 #define USE_FIELD_WEAKENINGV2
 
@@ -46,12 +46,13 @@
 #define USE_HFI
 #define HFI_VOLTAGE 4.0f
 #define HFI_TEST_CURRENT 0.0f
-#define HFI_THRESHOLD 2.5f
+#define HFI_THRESHOLD 0.0f
 #define HFI45
-#define DEFAULT_HFI_TYPE HFI_TYPE_NONE
+#define DEFAULT_HFI_TYPE HFI_TYPE_45
 //#define DEFAULT_HFI_TYPE HFI_TYPE_45
 // #define DEFAULT_HFI_TYPE HFI_TYPE_D
 //#define DEFAULT_HFI_TYPE HFI_TYPE_SPECIAL
+#define DEFAULT_STARTUP_SENSOR STARTUP_SENSOR_HFI
 
 //#define USE_HALL_START
 #define HALL_VOLTAGE_THRESHOLD 1.5f

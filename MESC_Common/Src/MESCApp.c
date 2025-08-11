@@ -88,7 +88,7 @@ void No_app(MESC_motor_typedef *_motor){
 	  _motor->FOC.Idq_prereq.q = 	_motor->input_vars.UART_req +
 	  	  	  	  	  	  	  	  	_motor->input_vars.max_request_Idq.q * (_motor->input_vars.ADC1_req + _motor->input_vars.ADC2_req +
 	  	  	  	  	  	  	  	  	_motor->input_vars.RCPWM_req + _motor->input_vars.ADC12_diff_req +
-									_motor->input_vars.remote_ADC1_req + _motor->input_vars.remote_ADC2_req );
+									_motor->input_v  ars.remote_ADC1_req + _motor->input_vars.remote_ADC2_req );
 
 	  //Clamp the Q component; d component is not directly requested
 	  _motor->FOC.Idq_prereq.q = clamp(_motor->FOC.Idq_prereq.q, _motor->input_vars.min_request_Idq.q, _motor->input_vars.max_request_Idq.q);

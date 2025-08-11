@@ -22,8 +22,10 @@
  *      Author: David Molony
  */
 /* Includes ------------------------------------------------------------------*/
+#include "main.h"
 #include "MESChw_setup.h"
 
+#include "MESCerror.h"
 #include "MESCfoc.h"
 #include "MESCpwm.h"
 
@@ -35,7 +37,7 @@ extern TIM_HandleTypeDef htim1;
 hw_setup_s g_hw_setup;
 motor_s motor;
 
-uint32_t ADC_buffer[6];
+uint16_t ADC_buffer[6];
 
 void hw_init(MESC_motor_typedef *_motor) {
   g_hw_setup.Imax =
@@ -85,6 +87,7 @@ void getRawADC(MESC_motor_typedef *_motor) {
   // Motor temp or Brake, needs plumbing in to main MESC...
   // todo fix this channel
   _motor->Raw.ADC_in_ext2 = ADC_buffer[2];
+  _motor->Raw.Vbus = ADC_buffer[1]; // Temperature on PB0
 }
 
 void getRawADCVph(MESC_motor_typedef *_motor) {
@@ -196,9 +199,12 @@ void mesc_init_2(MESC_motor_typedef *_motor) {
 
 void mesc_init_3(MESC_motor_typedef *_motor) {
 
-  HAL_ADC_Start_DMA(&hadc2, (uint32_t *)&ADC_buffer, 6);
-  HAL_ADCEx_InjectedStart(&hadc1);
-  HAL_ADCEx_InjectedStart(&hadc2);
+  HAL_ADCEx_InjectedStart_IT(&hadc2);
+  HAL_ADCEx_InjectedStart_IT(&hadc1);
+  if (HAL_ADC_Start_DMA(&hadc1, (uint32_t *)&ADC_buffer, 6) != HAL_OK) {
+    /* ADC conversion start error */
+    Error_Handler();
+  }
 
   HAL_TIM_PWM_Start(_motor->mtimer, TIM_CHANNEL_4);
 
@@ -218,12 +224,6 @@ void mesc_init_3(MESC_motor_typedef *_motor) {
   // todo: Set up the ADC injected channels for current sensing
   //  __HAL_ADC_ENABLE_IT(&hadc1, ADC_IT_AWD); //ToDo, how do I put this into
   //  the whole shabang with multiple motors?...
-  __HAL_ADC_ENABLE_IT(&hadc1,
-                      ADC_IT_JEOC); // ToDo, how do I put this into the whole
-                                    // shabang with multiple motors?...
-  __HAL_ADC_ENABLE_IT(&hadc2,
-                      ADC_IT_JEOC); // ToDo, how do I put this into the whole
-                                    // shabang with multiple motors?...
   __HAL_TIM_ENABLE_IT(_motor->mtimer, TIM_IT_UPDATE);
 
   // Set up the input capture for throttle
@@ -237,14 +237,15 @@ void mesc_init_3(MESC_motor_typedef *_motor) {
 }
 
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc) {
-  if (hadc == &hadc1) {
+
+  if(hadc == &hadc1) {
     if (__HAL_ADC_GET_FLAG(&hadc1, ADC_FLAG_AWD1)) {
       handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_IA);
       handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_IB);
       handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_IC);
       handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_VBUS);
     }
-  } else if (hadc == &hadc2) {
+
     if (__HAL_ADC_GET_FLAG(&hadc2, ADC_FLAG_AWD1)) {
       handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_IA);
       handleError(&mtr[0], ERROR_ADC_OUT_OF_RANGE_IB);

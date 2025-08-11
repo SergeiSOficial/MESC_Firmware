@@ -39,6 +39,15 @@
 
 static const float sqrt3_on_2 = 0.866025f;
 
+// Helper to clamp computed CCR values to [0 .. ARR]
+static inline uint16_t clamp_to_arr(float v, TIM_HandleTypeDef *htim)
+{
+	if (v < 0.0f) v = 0.0f;
+	float arr = (float)htim->Instance->ARR;
+	if (v > arr) v = arr;
+	return (uint16_t)v;
+}
+
 //Debug
 #define DEMCR_TRCENA    0x01000000
 #define DEMCR           (*((volatile uint32_t *)0xE000EDFC))
@@ -55,10 +64,11 @@ void MESC_PWM_IRQ_handler(MESC_motor_typedef *_motor) {
 	FASTLED->BSRR = FASTLEDIO;
 #endif
 	uint32_t cycles = CPU_CYCLES;
-	if (_motor->mtimer->Instance->CR1&0x16) {//Polling the DIR (direction) bit on the motor counter DIR = 1 = downcounting
+	// Check counter direction: DIR = 1 -> downcounting, DIR = 0 -> upcounting
+	if (_motor->mtimer->Instance->CR1 & TIM_CR1_DIR) {
 		MESCpwm_Write(_motor);
 	}
-	if (!(_motor->mtimer->Instance->CR1&0x16)) {//Polling the DIR (direction) bit on the motor counter DIR = 0 = upcounting
+	if (!(_motor->mtimer->Instance->CR1 & TIM_CR1_DIR)) {
 		  MESChfi_Run(_motor);
 		  MESCpwm_Write(_motor);
 	}
@@ -100,10 +110,10 @@ if((fabsf(_motor->FOC.eHz)>0.005f*_motor->FOC.pwm_frequency)&&(_motor->HFI.injec
                       _motor->FOC.sincosangle.cos * Vq;
 #ifdef STEPPER_MOTOR//Skip inverse Clark
 
-    _motor->mtimer->Instance->CCR1 = (uint16_t)(1.0f * _motor->FOC.Vab_to_PWM * (_motor->FOC.Vab.a) + _motor->FOC.PWMmid);
-    _motor->mtimer->Instance->CCR2 = (uint16_t)(-1.0f * _motor->FOC.Vab_to_PWM * (_motor->FOC.Vab.a) + _motor->FOC.PWMmid);
-    _motor->mtimer->Instance->CCR3 = (uint16_t)(1.0f * _motor->FOC.Vab_to_PWM * (_motor->FOC.Vab.b) + _motor->FOC.PWMmid);
-    _motor->mtimer->Instance->CCR4 = (uint16_t)(-1.0f * _motor->FOC.Vab_to_PWM * (_motor->FOC.Vab.b) + _motor->FOC.PWMmid);
+	_motor->mtimer->Instance->CCR1 = clamp_to_arr((1.0f * _motor->FOC.Vab_to_PWM * (_motor->FOC.Vab.a) + _motor->FOC.PWMmid), _motor->mtimer);
+	_motor->mtimer->Instance->CCR2 = clamp_to_arr((-1.0f * _motor->FOC.Vab_to_PWM * (_motor->FOC.Vab.a) + _motor->FOC.PWMmid), _motor->mtimer);
+	_motor->mtimer->Instance->CCR3 = clamp_to_arr((1.0f * _motor->FOC.Vab_to_PWM * (_motor->FOC.Vab.b) + _motor->FOC.PWMmid), _motor->mtimer);
+	_motor->mtimer->Instance->CCR4 = clamp_to_arr((-1.0f * _motor->FOC.Vab_to_PWM * (_motor->FOC.Vab.b) + _motor->FOC.PWMmid), _motor->mtimer);
 
 
 #else
@@ -146,12 +156,12 @@ if((fabsf(_motor->FOC.eHz)>0.005f*_motor->FOC.pwm_frequency)&&(_motor->HFI.injec
 
     	    ////////////////////////////////////////////////////////
     	    // Actually write the value to the timer registers
-    	    _motor->mtimer->Instance->CCR1 =
-    	    		(uint16_t)(_motor->FOC.Vab_to_PWM * _motor->FOC.inverterVoltage[0] + mid_value);
-    	    _motor->mtimer->Instance->CCR2 =
-    	    		(uint16_t)(_motor->FOC.Vab_to_PWM * _motor->FOC.inverterVoltage[1] + mid_value);
-    	    _motor->mtimer->Instance->CCR3 =
-    	    		(uint16_t)(_motor->FOC.Vab_to_PWM * _motor->FOC.inverterVoltage[2] + mid_value);
+			_motor->mtimer->Instance->CCR1 =
+				clamp_to_arr((_motor->FOC.Vab_to_PWM * _motor->FOC.inverterVoltage[0] + mid_value), _motor->mtimer);
+			_motor->mtimer->Instance->CCR2 =
+				clamp_to_arr((_motor->FOC.Vab_to_PWM * _motor->FOC.inverterVoltage[1] + mid_value), _motor->mtimer);
+			_motor->mtimer->Instance->CCR3 =
+				clamp_to_arr((_motor->FOC.Vab_to_PWM * _motor->FOC.inverterVoltage[2] + mid_value), _motor->mtimer);
 
     	    //Dead time compensation
     	#ifdef DEADTIME_COMP
@@ -208,9 +218,9 @@ if((fabsf(_motor->FOC.eHz)>0.005f*_motor->FOC.pwm_frequency)&&(_motor->HFI.injec
     			_motor->FOC.inverterVoltage[2] = _motor->FOC.inverterVoltage[2]-bottom_value;
 
     			//Write the timer registers
-				_motor->mtimer->Instance->CCR1 = (uint16_t)(_motor->FOC.Vab_to_PWM * _motor->FOC.inverterVoltage[0]);
-				_motor->mtimer->Instance->CCR2 = (uint16_t)(_motor->FOC.Vab_to_PWM * _motor->FOC.inverterVoltage[1]);
-				_motor->mtimer->Instance->CCR3 = (uint16_t)(_motor->FOC.Vab_to_PWM * _motor->FOC.inverterVoltage[2]);
+				_motor->mtimer->Instance->CCR1 = clamp_to_arr((_motor->FOC.Vab_to_PWM * _motor->FOC.inverterVoltage[0]), _motor->mtimer);
+				_motor->mtimer->Instance->CCR2 = clamp_to_arr((_motor->FOC.Vab_to_PWM * _motor->FOC.inverterVoltage[1]), _motor->mtimer);
+				_motor->mtimer->Instance->CCR3 = clamp_to_arr((_motor->FOC.Vab_to_PWM * _motor->FOC.inverterVoltage[2]), _motor->mtimer);
     	    }
     	#ifdef OVERMOD_DT_COMP_THRESHOLD
     	    //Concept here is that if we are close to the VBus max, we just do not turn the FET off.

@@ -74,6 +74,7 @@ float two_on_sqrt3 = 1.15470f;
 MESC_motor_typedef mtr[NUM_MOTORS];
 
 extern ADC_HandleTypeDef hadc1;
+extern ADC_HandleTypeDef hadc2;
 
 
 //Debug
@@ -578,7 +579,7 @@ void fastLoop(MESC_motor_typedef *_motor) {
       MESCpwm_generateBreak(_motor);  // Generate a break state (software disabling all PWM)
                         // Now panic and freak out
       //Get the encoder angle still; we would like to continue tracking angle, there is no harm in it...
-	  getIncEncAngle(_motor);
+	//   getIncEncAngle(_motor);
 	  if(_motor->MotorSensorMode == MOTOR_SENSOR_MODE_INCREMENTAL_ENCODER){
 		  _motor->FOC.FOCAngle = _motor->FOC.enc_angle;
 	  }else{
@@ -692,6 +693,7 @@ void fastLoop(MESC_motor_typedef *_motor) {
   }
 #ifdef SOFTWARE_ADC_REGULAR
        HAL_ADC_Start(&hadc1); //Try to eliminate the HAL call, slow and inefficient. Leaving this here for now.
+       HAL_ADC_Start(&hadc2); //Try to eliminate the HAL call, slow and inefficient. Leaving this here for now.
         //hadc1.Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
 #endif
 
