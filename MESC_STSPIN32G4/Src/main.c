@@ -163,6 +163,17 @@ int main(void)
   //Initialise MESC
 	motor_init(&mtr[0]);
 	MESCfoc_Init(&mtr[0]);
+  // HAL_Delay(3000);
+
+  // mtr[0].MotorState = MOTOR_STATE_MEASURING;
+  // while (mtr[0].MotorState == MOTOR_STATE_MEASURING) {
+  //   __NOP();
+  // }
+  // HAL_Delay(3000);
+  // mtr[0].MotorState = MOTOR_STATE_GET_KV;
+  // while (mtr[0].MotorState == MOTOR_STATE_GET_KV) {
+  //   __NOP();
+  // }
   /* USER CODE END 2 */
 
   /* Infinite loop */

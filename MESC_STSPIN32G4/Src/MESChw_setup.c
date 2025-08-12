@@ -78,6 +78,12 @@ void getRawADC(MESC_motor_typedef *_motor) {
   _motor->Raw.Iw = HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_1);
   _motor->Raw.Vbus = HAL_ADCEx_InjectedGetValue(
       &hadc2, ADC_INJECTED_RANK_2); // Bus/battery voltage
+  // if (ADC_buffer[3] != 0 && ADC_buffer[4] != 0 && ADC_buffer[5] != 0 && ADC_buffer[1] != 0) {
+  //   _motor->Raw.Iu = ADC_buffer[3];
+  //   _motor->Raw.Iv = ADC_buffer[4];
+  //   _motor->Raw.Iw = ADC_buffer[5];
+  //   _motor->Raw.Vbus = ADC_buffer[1]; // Bus/battery voltage
+  // }
 
   // These are handled by regular conversion manager and DMA
   GET_THROTTLE_INPUT;
@@ -86,15 +92,15 @@ void getRawADC(MESC_motor_typedef *_motor) {
   _motor->Raw.MOSu_T = ADC_buffer[2]; // Temperature on PB1
   // Motor temp or Brake, needs plumbing in to main MESC...
   // todo fix this channel
-  _motor->Raw.ADC_in_ext2 = ADC_buffer[2];
+  // _motor->Raw.ADC_in_ext2 = ADC_buffer[2];
   _motor->Raw.Vbus = ADC_buffer[1]; // Temperature on PB0
 }
 
 void getRawADCVph(MESC_motor_typedef *_motor) {
   // Voltage sense for the MP2
-  _motor->Raw.Vu = ADC_buffer[3]; // PhaseU Voltage
-  _motor->Raw.Vv = ADC_buffer[4];
-  _motor->Raw.Vw = ADC_buffer[5];
+  // _motor->Raw.Vu = ADC_buffer[3]; // PhaseU Voltage
+  // _motor->Raw.Vv = ADC_buffer[4];
+  // _motor->Raw.Vw = ADC_buffer[5];
 }
 #if 0
 static uint32_t const flash_sector_map[] = {
@@ -227,13 +233,13 @@ void mesc_init_3(MESC_motor_typedef *_motor) {
   __HAL_TIM_ENABLE_IT(_motor->mtimer, TIM_IT_UPDATE);
 
   // Set up the input capture for throttle
-  HAL_TIM_IC_Start(_motor->stimer, TIM_CHANNEL_1);
-  HAL_TIM_IC_Start(_motor->stimer, TIM_CHANNEL_2);
-  __HAL_TIM_ENABLE_IT(_motor->stimer, TIM_IT_UPDATE);
+  // HAL_TIM_IC_Start(_motor->stimer, TIM_CHANNEL_1);
+  // HAL_TIM_IC_Start(_motor->stimer, TIM_CHANNEL_2);
+  // __HAL_TIM_ENABLE_IT(_motor->stimer, TIM_IT_UPDATE);
   // Here we can auto set the prescaler to get the us input regardless of the
   // main clock
-  __HAL_TIM_SET_PRESCALER(_motor->stimer,
-                          (HAL_RCC_GetHCLKFreq() / 1000000 - 1));
+  // __HAL_TIM_SET_PRESCALER(_motor->stimer,
+  //                         (HAL_RCC_GetHCLKFreq() / 1000000 - 1));
 }
 
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc) {

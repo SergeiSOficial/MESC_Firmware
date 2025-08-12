@@ -14,7 +14,7 @@
 
 #define SOFTWARE_ADC_REGULAR
 
-#define HAS_PHASE_SENSORS //This refers to VOLTAGE sensing on phase, not current!
+// #define HAS_PHASE_SENSORS //This refers to VOLTAGE sensing on phase, not current!
 
 #define NUM_MOTORS 1
 
@@ -43,9 +43,9 @@
 #define  ADC2MAX 4095
 
 #define ADC1_POLARITY 1.0f
-#define ADC2_POLARITY -1.0f
+#define ADC2_POLARITY 1.0f
 
-#define DEFAULT_INPUT	0b1001 //0b...wxyz where w is UART, x is RCPWM, y is ADC2 z is ADC1
+#define DEFAULT_INPUT	0b1010 //0b...wxyz where w is UART, x is RCPWM, y is ADC2 z is ADC1
 
 
 //Use the Ebike Profile tool
@@ -64,7 +64,7 @@
 //#define USE_SQRT_CIRCLE_LIM
 #define USE_SQRT_CIRCLE_LIM_VD
 
-//#define USE_MTPA
+#define USE_MTPA
 
 /////////////////////Related to ONLINE PARAMETER ESTIMATION//////////////////////////////
 #ifndef LR_OBS_CURRENT
