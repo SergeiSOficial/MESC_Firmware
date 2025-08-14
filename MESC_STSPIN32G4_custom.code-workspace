@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"path": "MESC_STSPIN32G4_custom"
+		},
+		{
+			"path": "MESC_Common"
+		}
+	],
+	"settings": {
+		"stm32cube-ide-clangd.path": "cube",
+		"stm32cube-ide-clangd.arguments": [
+			"starm-clangd",
+			"--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/13.3.1+st.9/bin/arm-none-eabi-gcc.exe"
+		]
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-vscode.cmake-tools",
+			"stmicroelectronics.stm32cube-ide-core",
+			"stmicroelectronics.stm32cube-ide-project-manager",
+			"marus25.cortex-debug"
+		]
+	}
+}
